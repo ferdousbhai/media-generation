@@ -32,17 +32,67 @@ uv run ~/.claude/skills/media-generation/scripts/generate_video.py \
 ```
 
 ### Models
-- `veo-3.0-generate-preview` (default) — standard quality
-- `veo-3.0-fast-generate-preview` — faster, lower cost
-- `veo-3.1-generate-preview` — best for dialogue/speech in video
-- `veo-3.1-fast-generate-preview` — fast with audio
+- `veo-3.0-generate-001` (default) — stable, video only
+- `veo-3.0-fast-generate-001` — faster, lower cost
+- `veo-3.1-generate-preview` — supports video extend, audio sync
+- `veo-3.1-fast-generate-preview` — fast with extend support
 
 ### Prompting Tips
-- Use quotes for dialogue: `'She says "Hello!"'`
-- Describe sounds explicitly: `"thunder rumbling, rain pattering"`
-- Specify camera movements: `"slow pan", "close-up", "wide shot"`
+- Specify camera movements: `"slow zoom in", "pan left", "close-up"`
+- Add `"no talking, no dialogue"` if character shouldn't speak
+- Describe atmosphere: `"rain outside", "purple mystical energy"`
 
 **Note:** Veo requires paid tier. ~$0.40/sec standard, ~$0.15/sec fast.
+
+## Music Video from Image + Audio
+
+### Overview
+1. Start with character image + audio track (e.g., from Suno)
+2. Transcribe audio to get timestamps
+3. Generate clip 1 from image (veo-3.1)
+4. Extend each subsequent clip from previous (maintains continuity)
+5. Stitch clips + overlay audio with ffmpeg
+
+### Step 1: Transcribe audio for timing
+```bash
+whisper-ctranslate2 "song.mp3" --model large-v3 --output_dir /tmp --output_format srt
+```
+
+### Step 2: Generate first clip from image
+```python
+# Use veo-3.1 (required for extend feature)
+operation = client.models.generate_videos(
+    model="veo-3.1-generate-preview",
+    image=types.Image(image_bytes=img_data, mime_type="image/jpeg"),
+    prompt="character description, scene action, no talking",
+)
+video1 = operation.result.generated_videos[0]
+```
+
+### Step 3: Extend from previous clip
+```python
+operation = client.models.generate_videos(
+    model="veo-3.1-generate-preview",
+    video=previous_video.video,  # Pass previous video object
+    prompt="next scene description, continuous action, no talking",
+)
+```
+
+### Step 4: Stitch clips + add audio
+```bash
+# Create concat list
+printf "file 'clip_01.mp4'\nfile 'clip_02.mp4'\n..." > concat.txt
+
+# Stitch video clips
+ffmpeg -f concat -safe 0 -i concat.txt -c copy combined.mp4
+
+# Add audio track
+ffmpeg -i combined.mp4 -i song.mp3 -c:v copy -c:a aac -map 0:v -map 1:a final.mp4
+```
+
+### Cost estimate
+- ~8 sec per clip × $0.40/sec = $3.20/clip
+- 4-min song ≈ 30 clips ≈ $96
 
 ## Audio Generation
 

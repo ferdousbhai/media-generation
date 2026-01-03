@@ -24,7 +24,7 @@ from pathlib import Path
 def generate_video(
     prompt: str,
     output_path: str,
-    model: str = "veo-3.0-generate-preview",
+    model: str = "veo-3.0-generate-001",  # Stable production model
     negative_prompt: str | None = None,
     input_image_path: str | None = None,
     api_key: str | None = None,
@@ -71,10 +71,15 @@ def generate_video(
             print(f"Error: Input image not found: {input_image_path}", file=sys.stderr)
             sys.exit(1)
 
-        # Upload the image file
-        print(f"Uploading input image: {input_image_path}")
-        uploaded_file = client.files.upload(file=path)
-        image = uploaded_file
+        # Load image as Image type for Veo
+        print(f"Loading input image: {input_image_path}")
+        import base64
+        import mimetypes
+        mime_type, _ = mimetypes.guess_type(input_image_path)
+        mime_type = mime_type or "image/jpeg"
+        with open(path, "rb") as f:
+            image_data = f.read()
+        image = types.Image(image_bytes=image_data, mime_type=mime_type)
 
     # Start video generation
     print(f"Starting video generation with model: {model}")
@@ -153,8 +158,8 @@ Examples:
   %(prog)s --prompt "A person says 'Hello world!'" --filename "hello.mp4" --model veo-3.1-generate-preview
 
 Models:
-  veo-3.0-generate-preview   - Standard Veo 3 (default)
-  veo-3.0-fast-generate-preview - Faster, lower cost
+  veo-3.0-generate-001       - Standard Veo 3 (default)
+  veo-3.0-fast-generate-001  - Faster, lower cost
   veo-3.1-generate-preview   - Latest with improved audio
   veo-3.1-fast-generate-preview - Fast Veo 3.1
 
@@ -175,8 +180,8 @@ Cost: ~$0.40/sec (standard) or ~$0.15/sec (fast)
     )
     parser.add_argument(
         "--model",
-        default="veo-3.0-generate-preview",
-        help="Veo model to use (default: veo-3.0-generate-preview)",
+        default="veo-3.0-generate-001",
+        help="Veo model to use (default: veo-3.0-generate-001)",
     )
     parser.add_argument(
         "--negative",
