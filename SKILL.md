@@ -8,7 +8,7 @@ description: Generate images, videos, and audio using Google's Gemini APIs. Use 
 ## Image Generation
 
 ```bash
-uv run ~/.claude/skills/nano-banana-pro/scripts/generate_image.py \
+uv run ~/.claude/skills/media-generation/scripts/generate_image.py \
   --prompt "description or editing instructions" \
   --filename "output.png" \
   [--input-image "source.png"] \
@@ -23,7 +23,7 @@ uv run ~/.claude/skills/nano-banana-pro/scripts/generate_image.py \
 ## Video Generation
 
 ```bash
-uv run ~/.claude/skills/nano-banana-pro/scripts/generate_video.py \
+uv run ~/.claude/skills/media-generation/scripts/generate_video.py \
   --prompt "video description" \
   --filename "output.mp4" \
   [--model veo-3.0-generate-preview] \
